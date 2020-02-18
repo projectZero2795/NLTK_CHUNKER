@@ -1,3 +1,4 @@
+import nltk
 from practica_nltk.resource import *
 
 def read_corpus(input_file):
@@ -25,7 +26,8 @@ def read_iob_tag(input_file):
     train = []
     test = []
     sent = []
-    for line in corpus_iob:
+    for i in range(len(corpus_iob)):
+        line = corpus_iob[i]
         data = line.split()
         if len(data):
             word = data[0]
@@ -64,11 +66,10 @@ def traverse(t, iob, label, f):
     return iob
 
 
-def write_iob_tags(output_file, corpus, regex_chunker):
+def write_iob_tags(output_file, corpus, tagger, regex_chunker):
     f = open(output_file, 'w')
     for sentence in corpus:
-        sentence_tokens = nltk.word_tokenize(sentence)
-        tagged_sentence = regex_chunker.tagger.tag(sentence_tokens)
+        tagged_sentence =tagger.tag(sentence)
         chunked_sentence = regex_chunker.parser.parse(tagged_sentence)
         traverse(chunked_sentence, 0, "", f)
         f.write("\n")

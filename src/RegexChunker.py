@@ -12,9 +12,9 @@ class RegexChunker(object):
 
 	def init_parser(self):
 		grammar = ""
-		for key, value in self.grammar:
-			grammar = grammar + key + ": {" + value + "}"
-		self.parser = RegexParser(grammar)
+		for key, value in self.grammar.items():
+			grammar = grammar  + key + ": {" + value + "} \n"
+		self.parser = RegexpParser(grammar)
 
 
 

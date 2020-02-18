@@ -1,3 +1,4 @@
+import nltk
 from nltk.chunk.util import *
 from nltk.chunk.regexp import *
 from nltk import Tree

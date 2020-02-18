@@ -1,3 +1,6 @@
+import nltk
+
+
 def npchunk_features(sentence, i, history):
     word, pos = sentence[i]
     if i == 0:

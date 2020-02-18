@@ -1,3 +1,4 @@
+import nltk
 from nltk import UnigramTagger, BigramTagger, TrigramTagger
 from nltk.tag.hmm import HiddenMarkovModelTagger
 
