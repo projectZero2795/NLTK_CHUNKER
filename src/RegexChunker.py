@@ -1,6 +1,7 @@
+import nltk
 from nltk import RegexpParser
 
-class RegexChunker(object):
+class RegexChunker(nltk.ChunkParserI):
 
 	def __init__(self, grammar):
 
@@ -16,39 +17,29 @@ class RegexChunker(object):
 			grammar = grammar  + key + ": {" + value + "} \n"
 		self.parser = RegexpParser(grammar)
 
+	def parse(self, sentence):
+		return  self.parser.parse(sentence)
 
 
-	def traverse_to_dic(t, dicc, label = ""):
-	    try:
-	        t.label()
-	    except AttributeError:
-	        if label in dicc.keys():
-	        	dicc[label].append(list(t)[0])
-	    else:
-	        for child in t:
-	            traverse_to_dic(child, dicc, t.label())
-
-	    return None
+	def traverse_to_dic(self, t, dicc):
+		try:
+			t.label()
+		except AttributeError:
+			dicc.append(list(t)[0])
+		else:
+			new_list = []
+			new_dicc = {t.label():new_list}
+			dicc.append(new_dicc)
+			for child in t:
+				self.traverse_to_dic(child, new_list)
 
 	def predict(self, tagged_sentence):
 		chunked_sentence = self.parser.parse(tagged_sentence)
-		dic = {}
-		for key, _ in self.grammar:
-			dic[key] = []
-
-		traverse_to_dic(chunked_sentence, dic)
+		dic = []
+		self.traverse_to_dic(chunked_sentence, dic)
 		return dic
 
-	def predict_and_print(self, tagged_sentence):
-		chunked_sentence = self.parser.parse(tagged_sentence)
-		dic = {}
-		for key, _ in self.grammar:
-			dic[key] = []
-
-		traverse_to_dic(chunked_sentence, dic)
-		
-		for key, value in dic:
-			print(key, ":", str(value))
+	
 
 
 		

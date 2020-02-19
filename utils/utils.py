@@ -39,7 +39,7 @@ def read_iob_tag(input_file):
             if i % 10:
                 train.append(sent)
             else:
-                test.append(sent)
+                test.append(nltk.chunk.conlltags2tree(sent))
             sent = []
     return train, test
 

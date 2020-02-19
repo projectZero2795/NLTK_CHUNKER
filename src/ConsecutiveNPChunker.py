@@ -25,19 +25,39 @@ class ConsecutiveNPChunkTagger(nltk.TaggerI):
     def tag(self, sentence):
         history = []
         for i, word in enumerate(sentence):
-            feautureset = npchunk_features(sentence, i, history)
+            featureset = npchunk_features(sentence, i, history)
             tag = self.classifier.classify(featureset)
             history.append(tag)
-        return zip(sentences, history)
+        return zip(sentence, history)
 
 class ConsecutiveNPChunker(nltk.ChunkParserI):
     
-    def __init__(self, train_sents):
-        tagged_sents = [[((w,t), c) for (w,t,c) in nltk.chunk.tree2conlltags(sent)]
+    def __init__(self, train_sents, to_detect_list):
+        tagged_sents = [[((w,t), c) for (w,t,c) in sent]
                            for sent in train_sents]
         self.tagger = ConsecutiveNPChunkTagger(tagged_sents)
-            
+        self.to_detect_list = to_detect_list
+
+    def traverse_to_dic(self, t, dicc):
+        try:
+            t.label()
+        except AttributeError:
+            dicc.append(list(t)[0])
+        else:
+            new_list = []
+            new_dicc = {t.label():new_list}
+            dicc.append(new_dicc)
+            for child in t:
+                self.traverse_to_dic(child, new_list)
+
+
     def parse(self, sentence):
         tagged_sents = self.tagger.tag(sentence)
         conlltags = [(w,t,c) for ((w,t),c) in tagged_sents]
         return nltk.chunk.conlltags2tree(conlltags)
+            
+    def predict(self, sentence):
+        chunked_sentence = self.parse(sentence)
+        dic = []
+        self.traverse_to_dic(chunked_sentence, dic)
+        return dic

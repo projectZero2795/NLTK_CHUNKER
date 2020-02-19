@@ -1,67 +1,96 @@
 import sys
+import nltk
 from practica_nltk.src import Tagger, RegexChunker, TrigramChunker, ConsecutiveNPChunker
 from practica_nltk.utils import utils
 from nltk.corpus import cess_esp
 
+
+
 # Constantes
+# Modos
 TAGGER = 'hdm'
 REGEX = 'regex'
 TRIGRAM = 'trigram'
-CONSECUTIVE_NP_CHUNKER = 'consec'
-TEST_SENTENCE = "Quiero 1 pizza de pepperoni con extra de mozarella, y de bebida, una coca-cola."
-IOB_INPUT_FILE = 'pedidos_iob_tagged.txt'
+BAYES = 'bayes'
 
-# Leer corpus
-sents = cess_esp.tagged_sents()
-corpus = utils.read_corpus('practica_nltk/resource/pedidos.txt')
-train, test = utils.split_to_train_test_set(corpus)
 
-# Entrenar tagger
-tagger = Tagger.Tagger(TAGGER, sents)
-tagged_sentence = tagger.tag(TEST_SENTENCE)
+# iob tags
+CORPUS_PATH = 'practica_nltk/resource/pedidos.txt'
+IOB_INPUT_FILE = 'practica_nltk/resource/pedidos_iob_tagged.txt'
 
-# Definir gramática de cantidad y comida
-grammar = {}
-grammar['Cantidad'] = r"""<Z|dn0.*>"""
-grammar['Comida'] = r"""<ncfs.*|aq0.*|sn.*|da0f.*|np.*|sn.*> <sps00>? <di0.*>? <nc.*|aq0.*|sn.*|da0f.*|np.*>?"""
-regex_chunker = RegexChunker.RegexChunker(grammar)
+# regex config
+COMIDA = 'Comida'
+INGREDIENTE = 'Ingrediente'
+CANTIDAD = 'Cantidad'
+PEDIDO = 'Pedido'
+TO_DETECT_LIST = [PEDIDO, CANTIDAD, COMIDA, INGREDIENTE]
+CANTIDAD_GRAMMAR = r"""<Z|dn0.*>"""
+INGREDIENTE_GRAMMAR = r"""<sps00> <np.*|nc.*>"""
+COMIDA_GRAMMAR = r"""<aq0.*|sn.*|da0f.*|sn.*|nc.*|Fpt> <Ingrediente>*"""
+PEDIDO_GRAMMAR = r"""<Cantidad>? <Comida>"""
 
-# Guardar iob tags
-utils.write_iob_tags(IOB_INPUT_FILE, corpus, tagger, regex_chunker)
+def init_tagger_chunkers():
+	# Leer corpus
+	sents = cess_esp.tagged_sents()
+	corpus = utils.read_corpus(CORPUS_PATH)
+	train, test = utils.split_to_train_test_set(corpus)
 
-# Leer iob tags
-train_data, test_data = utils.read_iob_tag(IOB_INPUT_FILE)
+	# Entrenar tagger
+	tagger = Tagger.Tagger(TAGGER, sents)
 
-# Definir tests regex, trigram, y naiveBayes
-def test_regex_chunker():
+	# Definir gramática de cantidad y comida
+	grammar = {}
+	grammar[INGREDIENTE] = INGREDIENTE_GRAMMAR
+	grammar[COMIDA] = COMIDA_GRAMMAR
+	grammar[CANTIDAD] = CANTIDAD_GRAMMAR
+	grammar[PEDIDO] = PEDIDO_GRAMMAR
+	regex_chunker = RegexChunker.RegexChunker(grammar)
+
+	# Guardar iob tags
+	utils.write_iob_tags(IOB_INPUT_FILE, corpus, tagger, regex_chunker)
+
+	# Leer iob tags
+	train_data, test_data = utils.read_iob_tag(IOB_INPUT_FILE)
+
+	trigram_chunker = TrigramChunker.Chunker(train_data, TO_DETECT_LIST)
+	bayes_chunker = ConsecutiveNPChunker.ConsecutiveNPChunker(train_data, TO_DETECT_LIST) 
+	return regex_chunker, tagger, trigram_chunker, bayes_chunker, test_data
+
+def tag(sentence, tagger):
+	return tagger.tag(sentence)
+
+def mostrar_comida_ingrediente_cantidad(dic):
+		root = dic[0]['S']
+		for element in root:
+			# si es un pedido
+			if isinstance(element, dict):
+				for x in element[PEDIDO]:
+					# puede ser cantidad o comida
+					if isinstance(x, dict)
+		#dif = len(dic[COMIDA]) - len(dic[CANTIDAD])
+		#if dif > 0: dic[CANTIDAD] += ['1'] * dif
+		#for key, value in dic.items():
+		#	print(key, ":", str(value))
+
+def chunk(tagged_sentence, regex_chunker, trigram_chunker, bayes_chunker, test_data):
 	print("Testing regex chunker ...")
-	regex_chunker.predict_and_print(TEST_SENTENCE)
-
-def test_trigram_chunker(train, tagged_sentence):
-	print("Testing trigram chunker ...")
-	chunker = TrigramChunker.Chunker(train)
-	chunker.parse(tagged_sentence) 
-
-def test_consecutive_np_chunker(train, tagged_sentence):
-	print("Testing test_consecutive_np_chunker ...")
-	chunker = ConsecutiveNPChunker.ConsecutiveNPChunker(tagged_sentence) 
-	chunker.parse(tagged_sentence)
-
+	mostrar_comida_cantidad(regex_chunker.predict(tagged_sentence))
+	#print(regex_chunker.evaluate(test_data))
+	#print("Testing trigram chunker ...")
+	#mostrar_comida_cantidad(trigram_chunker.predict(tagged_sentence))
+	#print(trigram_chunker.evaluate(test_data))
+	#print("Testing bayes chunker ...")
+	#mostrar_comida_cantidad(bayes_chunker.predict(tagged_sentence)) 
+	#print(bayes_chunker.evaluate(test_data))
 
 if __name__ == "__main__":
-	if not len(sys.argv):
-		test_regex_chunker()
-		test_trigram_chunker(train, tagged_sentence)
-		test_consecutive_np_chunker(train, tagged_sentence)
-	else:
-		for mode in sys.argv:
-			if mode == REGEX:
-				test_regex_chunker()
-			elif mode == TRIGRAM:
-				test_trigram_chunker(train, tagged_sentence)
-			elif mode == CONSECUTIVE_NP_CHUNKER:
-				test_consecutive_np_chunker(train, tagged_sentence)
-			else:
-				print("Error (",mode,"):- Posibles argumentos:",REGEX, " , ",TRIGRAM, " , ",CONSECUTIVE_NP_CHUNKER)
+	test_sentence = "quiero 3 bocadillos de anchoas, 2 pizzas, 2 tortilla de patatas"
+	if len(sys.argv) > 1:
+		test_sentence = sys.argv[1]
 
+	print("Frase a probar: ",test_sentence)
 
+	regex_chunker, tagger, trigram_chunker, bayes_chunker, test_data = init_tagger_chunkers()
+	tagged_sentence = tag(test_sentence, tagger)	
+	print("Tagged : ",str(tagged_sentence))
+	chunk(tagged_sentence, regex_chunker, trigram_chunker, bayes_chunker, test_data)
