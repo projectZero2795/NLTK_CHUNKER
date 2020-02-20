@@ -7,11 +7,14 @@ from nltk.tag.hmm import HiddenMarkovModelTagger
 
 class Chunker(nltk.ChunkParserI):
 
-    def __init__(self, train_sents, to_detect_list):
+    def __init__(self, train_sents, to_detect_list, n_gram = 1):
         train_data = [[(t,c) for w,t,c in sent] for sent in train_sents]
+
         self.tagger = UnigramTagger(train_data)
-        self.tagger = BigramTagger(train_data, backoff= self.tagger)
-        self.tagger = TrigramTagger(train_data, backoff=self.tagger)
+        if n_gram > 1:
+            self.tagger = BigramTagger(train_data, backoff= self.tagger)
+        if n_gram > 2:
+            self.tagger = TrigramTagger(train_data, backoff=self.tagger)
         self.to_detect_list = to_detect_list
 
     def traverse_to_dic(self, t, dicc):
